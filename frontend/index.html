@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#173C11">
+  <title>La Palmeraie — Stocks</title>
+</head>
+<body>
+
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <div class="layout">
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">
+          <img src="logolapalmeraiedarkmode.png" alt="La Palmeraie" onerror="this.style.display='none'">
+        </span>
+        <button class="btn-toggle" id="btnToggle" onclick="toggleSidebar()">◀</button>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-item active" href="#" data-page="dashboard">
+          <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+          <span class="nav-label">Tableau de bord</span>
+        </a>
+        <a class="nav-item" href="#" data-page="shopping">
+          <span class="nav-icon"><i class="fa-solid fa-cart-plus"></i></span>
+          <span class="nav-label">Nouveau Shopping</span>
+        </a>
+        <a class="nav-item" href="#" data-page="endofday">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Fin de Journée</span>
+        </a>
+        <a class="nav-item" href="#" data-page="losses">
+          <span class="nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+          <span class="nav-label">Journal des Pertes</span>
+        </a>
+        <a class="nav-item" href="#" data-page="history">
+          <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+          <span class="nav-label">Historique</span>
+        </a>
+        <a class="nav-item" href="#" data-page="products">
+          <span class="nav-icon"><i class="fa-solid fa-box"></i></span>
+          <span class="nav-label">Produits</span>
+        </a>
+        <!-- Analytics (admin only) -->
+        <a class="nav-item admin-only" href="#" data-page="analytics">
+          <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+          <span class="nav-label">Analytics</span>
+          <span class="nav-badge">Admin</span>
+        </a>
+
+        <!-- Intelligence (admin only) -->
+        <a class="nav-item admin-only" href="#" data-page="intelligence">
+          <span class="nav-icon"><i class="fa-solid fa-brain"></i></span>
+          <span class="nav-label">Intelligence IA</span>
+          <span class="nav-badge">Admin</span>
+        </a>
+
+        <!-- Admin only — hidden for managers via JS -->
+        <a class="nav-item admin-only" href="#" data-page="reports">
+          <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+          <span class="nav-label">Rapports</span>
+          <span class="nav-badge">Admin</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
+        <div class="user-info">
+          <span class="user-name" id="sidebarUserName">—</span>
+          <span class="user-role" id="sidebarUserRole">—</span>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="Déconnexion">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ========== MAIN ========== -->
+    <div class="main">
+      <header class="topbar">
+        <button class="btn-hamburger" onclick="openSidebar()">☰</button>
+        <span class="topbar-title" id="topbarTitle">Tableau de bord</span>
+        <div class="topbar-right">
+          <span class="topbar-date" id="topbarDate"></span>
+        </div>
+      </header>
+      <main class="content" id="pageContent">
+        <div class="loading-state">
+          <i class="fa-solid fa-spinner fa-spin"></i> Chargement...
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
