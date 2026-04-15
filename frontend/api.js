@@ -15,7 +15,7 @@
  * - Automatic redirect to login if token is missing or expired
  */
 
-const API_BASE = 'http://localhost:9000';
+const API_BASE = 'https://palmeraie-stocks-production.up.railway.app';
 
 // Get the stored token
 function getToken() {
