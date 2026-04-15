@@ -122,9 +122,15 @@
     </button>
   </div>
 
+  <!-- API Configuration - MUST be loaded before config.js -->
   <script>
-const API = 'https://palmeraie-stocks-production-8ae8.up.railway.app';
+    window.ENV = {
+      API_BASE: 'https://palmeraie-stocks-production-8ae8.up.railway.app'
+    };
+  </script>
 
+  <script src="config.js"></script>
+  <script>
     // Allow pressing Enter to submit
     document.getElementById('password').addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin();
@@ -146,7 +152,7 @@ const API = 'https://palmeraie-stocks-production-8ae8.up.railway.app';
       err.classList.remove('visible');
 
       try {
-        const res = await fetch(`${API}/auth/login`, {
+        const res = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })

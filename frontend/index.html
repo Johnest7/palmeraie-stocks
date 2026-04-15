@@ -101,6 +101,14 @@
     </div>
   </div>
 
+  <!-- API Configuration - MUST be loaded before config.js -->
+  <script>
+    window.ENV = {
+      API_BASE: 'https://palmeraie-stocks-production-8ae8.up.railway.app'
+    };
+  </script>
+
+  <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="app.js"></script>
   <script>
