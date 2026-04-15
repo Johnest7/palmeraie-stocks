@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title>J7 Control Center</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --card: #12121a;
+      --border: #1e1e2e;
+      --accent: #6c63ff;
+      --accent2: #39812F;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #22c55e;
+    }
+
+    body {
+      font-family: 'Segoe UI', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* LOGIN SCREEN */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 70%);
+    }
+
+    .login-box {
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 40px rgba(108,99,255,0.2);
+    }
+
+    .login-box h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: 2px;
+    }
+
+    .login-box p {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 28px;
+      letter-spacing: 1px;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      font-family: monospace;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--accent); }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn-login:hover { opacity: 0.9; }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* CONTROL CENTER */
+    .control-center { display: none; }
+
+    .topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+
+    .maintenance-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .toggle-switch {
+      width: 40px;
+      height: 22px;
+      background: var(--border);
+      border-radius: 99px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch.on { background: var(--danger); }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch.on::after { transform: translateX(18px); }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 16px 28px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      border-radius: 8px 8px 0 0;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-bottom: none;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--bg); border-color: var(--border); color: var(--accent); }
+
+    /* CONTENT */
+    .content {
+      padding: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* STAT CARDS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* TABLE */
+    .j7-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .j7-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    table.j7-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.j7-table th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    table.j7-table td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text); }
+    table.j7-table tr:last-child td { border-bottom: none; }
+    table.j7-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-superadmin { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .badge-admin { background: rgba(57,129,47,0.2); color: var(--accent2); }
+    .badge-manager { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .badge-active { background: rgba(34,197,94,0.2); color: var(--success); }
+    .badge-inactive { background: rgba(239,68,68,0.2); color: var(--danger); }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.8; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-warning { background: var(--warning); color: #000; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+
+    /* INPUT */
+    .j7-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      font-family: monospace;
+    }
+    .j7-input:focus { border-color: var(--accent); }
+
+    /* LOG ENTRY */
+    .log-entry {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 12px;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: var(--muted); white-space: nowrap; min-width: 130px; }
+    .log-action { color: var(--accent); font-weight: 600; min-width: 120px; }
+    .log-details { color: var(--text); flex: 1; }
+    .log-user { color: var(--accent2); min-width: 100px; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.visible { display: flex; }
+    .modal-box {
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 16px;
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .modal-box h3 { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+
+    /* DB TABLE viewer */
+    .db-table-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(108,99,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .db-table-name:hover { background: rgba(108,99,255,0.1); }
+    .db-table-rows { font-size: 12px; color: var(--muted); }
+
+    @media (max-width: 768px) {
+      .content { padding: 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>⚡ J7 CONTROL</h1>
+    <p>CENTRE DE CONTRÔLE — ACCÈS RESTREINT</p>
+
+    <div class="error-msg" id="loginError"></div>
+
+    <div class="field">
+      <label>Identifiant</label>
+      <input type="text" id="j7Username" placeholder="johnest7">
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="j7Password" placeholder="••••••••">
+    </div>
+    <div class="field">
+      <label>Clé secrète</label>
+      <input type="password" id="j7SecretKey" placeholder="••••••••••••••••">
+    </div>
+    <button class="btn-login" id="btnJ7Login" onclick="j7Login()">
+      <i class="fa-solid fa-shield-halved"></i> ACCÉDER AU CENTRE DE CONTRÔLE
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════ CONTROL CENTER ═══════════════ -->
+<div class="control-center" id="controlCenter">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">⚡ JOHNEST7 CONTROL CENTER</div>
+    <div class="topbar-right">
+      <div class="maintenance-toggle">
+        <span>MAINTENANCE</span>
+        <div class="toggle-switch" id="maintenanceToggle" onclick="toggleMaintenance()"></div>
+      </div>
+      <button class="btn-logout" onclick="j7Logout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+      </button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('dashboard')">📊 Dashboard</div>
+    <div class="tab" onclick="showTab('users')">👥 Utilisateurs</div>
+    <div class="tab" onclick="showTab('database')">🗄️ Base de données</div>
+    <div class="tab" onclick="showTab('logs')">📋 Logs d'activité</div>
+    <div class="tab" onclick="showTab('settings')">⚙️ Paramètres</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="j7Content">
+    <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Chargement...</div>
+  </div>
+
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal" id="resetModal">
+  <div class="modal-box">
+    <h3>🔑 Réinitialiser le mot de passe</h3>
+    <input type="hidden" id="resetUserId">
+    <div class="field" style="margin-bottom:16px;">
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;">NOUVEAU MOT DE PASSE</label>
+      <input type="text" class="j7-input" id="newPassword" placeholder="Nouveau mot de passe" style="width:100%;">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeResetModal()">Annuler</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="confirmResetPassword()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://palmeraie-stocks-production-8ae8.up.railway.app';
+let j7Token = sessionStorage.getItem('j7token'); // Use sessionStorage for extra security
+let maintenanceOn = false;
+
+// Auto-login if token exists
+if (j7Token) showControlCenter();
+
+// ── LOGIN ──
+async function j7Login() {
+  const username = document.getElementById('j7Username').value.trim();
+  const password = document.getElementById('j7Password').value;
+  const secretKey = document.getElementById('j7SecretKey').value;
+  const btn = document.getElementById('btnJ7Login');
+  const err = document.getElementById('loginError');
+
+  if (!username || !password || !secretKey) {
+    showLoginError('Remplissez tous les champs.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Vérification...';
+
+  try {
+    const res = await fetch(`${API}/j7/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, secret_key: secretKey })
+    });
+    const data = await res.json();
+    if (!res.ok) { showLoginError(data.detail || 'Accès refusé.'); return; }
+
+    j7Token = data.token;
+    sessionStorage.setItem('j7token', j7Token);
+    showControlCenter();
+  } catch(e) {
+    showLoginError('Impossible de contacter le serveur.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> ACCÉDER AU CENTRE DE CONTRÔLE';
+  }
+}
+
+function showLoginError(msg) {
+  const err = document.getElementById('loginError');
+  err.textContent = msg;
+  err.classList.add('visible');
+}
+
+function showControlCenter() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('controlCenter').style.display = 'block';
+  loadDashboard();
+}
+
+function j7Logout() {
+  sessionStorage.removeItem('j7token');
+  j7Token = null;
+  location.reload();
+}
+
+// ── API HELPER ──
+async function j7Fetch(path, options = {}) {
+  const headers = {
+    'Authorization': `Bearer ${j7Token}`,
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+  const res = await fetch(`${API}${path}`, { ...options, headers });
+  if (res.status === 401 || res.status === 403) { j7Logout(); return null; }
+  return res.json();
+}
+
+// ── TABS ──
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['dashboard','users','database','logs','settings'][i] === tab);
+  });
+  const fns = { dashboard: loadDashboard, users: loadUsers, database: loadDatabase, logs: loadLogs, settings: loadSettings };
+  fns[tab]?.();
+}
+
+function setContent(html) {
+  document.getElementById('j7Content').innerHTML = html;
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  setContent('<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Chargement...</div>');
+  const data = await j7Fetch('/j7/dashboard');
+  if (!data) return;
+
+  maintenanceOn = data.maintenance_mode;
+  const toggle = document.getElementById('maintenanceToggle');
+  if (maintenanceOn) toggle.classList.add('on');
+  else toggle.classList.remove('on');
+
+  const s = data.stats;
+  const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+
+  const logsHtml = data.recent_logs.length === 0
+    ? '<p style="color:var(--muted);font-size:13px;">Aucune activité enregistrée.</p>'
+    : data.recent_logs.map(l => `
+        <div class="log-entry">
+          <span class="log-time">${l.created_at}</span>
+          <span class="log-action">${l.action}</span>
+          <span class="log-details">${l.details || '—'}</span>
+        </div>`).join('');
+
+  setContent(`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">${s.total_users}</div><div class="stat-label">Utilisateurs</div></div>
+      <div class="stat-card"><div class="stat-value">${s.total_products}</div><div class="stat-label">Produits</div></div>
+      <div class="stat-card"><div class="stat-value">${s.total_sessions}</div><div class="stat-label">Sessions achat</div></div>
+      <div class="stat-card"><div class="stat-value">${s.total_exits}</div><div class="stat-label">Sorties</div></div>
+      <div class="stat-card"><div class="stat-value">${s.total_losses}</div><div class="stat-label">Pertes</div></div>
+      <div class="stat-card"><div class="stat-value" style="font-size:16px;">${fmt(s.total_spent)} F</div><div class="stat-label">Dépenses totales</div></div>
+      <div class="stat-card"><div class="stat-value" style="font-size:16px;">${fmt(s.total_revenue)} F</div><div class="stat-label">Revenus totaux</div></div>
+      <div class="stat-card"><div class="stat-value" style="font-size:16px;color:${s.margin>=0?'var(--success)':'var(--danger)'};">${fmt(s.margin)} F</div><div class="stat-label">Marge nette</div></div>
+    </div>
+
+    <div class="j7-card">
+      <h3>⚡ Activité récente</h3>
+      ${logsHtml}
+    </div>
+  `);
+}
+
+// ── USERS ──
+async function loadUsers() {
+  setContent('<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Chargement...</div>');
+  const users = await j7Fetch('/j7/users');
+  if (!users) return;
+
+  const rows = users.map(u => `
+    <tr>
+      <td><strong>${u.name}</strong></td>
+      <td style="font-family:monospace;color:var(--muted);">${u.username}</td>
+      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'Actif' : 'Inactif'}</span></td>
+      <td style="color:var(--muted);font-size:11px;">${u.last_login ? u.last_login.substring(0,16) : 'Jamais'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-warning" onclick="openResetModal(${u.id})">
+            <i class="fa-solid fa-key"></i> MDP
+          </button>
+          <button class="btn ${u.active ? 'btn-danger' : 'btn-success'}" onclick="toggleUserStatus(${u.id}, ${!u.active})">
+            <i class="fa-solid fa-${u.active ? 'ban' : 'check'}"></i>
+            ${u.active ? 'Désactiver' : 'Activer'}
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  setContent(`
+    <div class="j7-card">
+      <h3>👥 Tous les utilisateurs (${users.length})</h3>
+      <table class="j7-table">
+        <thead><tr><th>Nom</th><th>Username</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `);
+}
+
+function openResetModal(userId) {
+  document.getElementById('resetUserId').value = userId;
+  document.getElementById('newPassword').value = '';
+  document.getElementById('resetModal').classList.add('visible');
+}
+
+function closeResetModal() {
+  document.getElementById('resetModal').classList.remove('visible');
+}
+
+async function confirmResetPassword() {
+  const userId = parseInt(document.getElementById('resetUserId').value);
+  const newPassword = document.getElementById('newPassword').value.trim();
+  if (!newPassword || newPassword.length < 6) { alert('Mot de passe trop court (min 6 caractères).'); return; }
+
+  const res = await j7Fetch('/j7/users/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: userId, new_password: newPassword })
+  });
+  if (res?.ok) {
+    closeResetModal();
+    showToast('✅ Mot de passe réinitialisé !');
+  }
+}
+
+async function toggleUserStatus(userId, active) {
+  const res = await j7Fetch('/j7/users/toggle-status', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: userId, active })
+  });
+  if (res?.ok) { showToast(active ? '✅ Compte activé' : '⛔ Compte désactivé'); loadUsers(); }
+}
+
+// ── DATABASE ──
+async function loadDatabase() {
+  setContent('<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Chargement...</div>');
+  const data = await j7Fetch('/j7/database');
+  if (!data) return;
+
+  const tables = Object.entries(data).map(([name, info]) => `
+    <div class="db-table-name" onclick="toggleDbTable('${name}')">
+      <span style="font-family:monospace;font-weight:700;color:var(--accent);">${name}</span>
+      <span class="db-table-rows">${info.count} lignes</span>
+    </div>
+    <div id="dbtable-${name}" style="display:none;margin-bottom:16px;overflow-x:auto;">
+      ${info.recent.length === 0 ? '<p style="color:var(--muted);font-size:12px;padding:10px;">Vide</p>' : `
+        <table class="j7-table" style="font-size:11px;">
+          <thead><tr>${Object.keys(info.recent[0]).map(k => `<th>${k}</th>`).join('')}</tr></thead>
+          <tbody>${info.recent.map(r => `<tr>${Object.values(r).map(v => `<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v ?? '—'}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;">Affichage des 5 dernières entrées</p>`}
+    </div>`).join('');
+
+  setContent(`
+    <div class="j7-card">
+      <h3>🗄️ Base de données — Vue d'ensemble</h3>
+      ${tables}
+    </div>
+  `);
+}
+
+function toggleDbTable(name) {
+  const el = document.getElementById(`dbtable-${name}`);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── LOGS ──
+async function loadLogs() {
+  setContent('<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Chargement...</div>');
+  const logs = await j7Fetch('/j7/logs');
+  if (!logs) return;
+
+  const rows = logs.length === 0
+    ? '<p style="color:var(--muted);font-size:13px;">Aucun log.</p>'
+    : logs.map(l => `
+        <div class="log-entry">
+          <span class="log-time">${l.created_at?.substring(0,16) || '—'}</span>
+          <span class="log-user">${l.username || 'système'}</span>
+          <span class="log-action">${l.action}</span>
+          <span class="log-details">${l.details || '—'}</span>
+        </div>`).join('');
+
+  setContent(`
+    <div class="j7-card">
+      <h3>📋 Journal d'activité complet (${logs.length} entrées)</h3>
+      ${rows}
+    </div>
+  `);
+}
+
+// ── SETTINGS ──
+async function loadSettings() {
+  setContent('<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Chargement...</div>');
+  const settings = await j7Fetch('/j7/settings');
+  if (!settings) return;
+
+  const rows = settings.map(s => `
+    <tr>
+      <td style="font-family:monospace;color:var(--accent);">${s.key}</td>
+      <td>
+        <input type="text" class="j7-input" id="setting-${s.key}" value="${s.value}" style="width:300px;">
+      </td>
+      <td>
+        <button class="btn btn-primary" onclick="saveSetting('${s.key}')">Sauvegarder</button>
+      </td>
+    </tr>`).join('');
+
+  setContent(`
+    <div class="j7-card">
+      <h3>⚙️ Paramètres globaux</h3>
+      ${settings.length === 0 ? '<p style="color:var(--muted);">Aucun paramètre configuré.</p>' : `
+      <table class="j7-table">
+        <thead><tr><th>Clé</th><th>Valeur</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`}
+    </div>
+
+    <div class="j7-card">
+      <h3>➕ Ajouter un paramètre</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" class="j7-input" id="newSettingKey" placeholder="clé" style="width:200px;">
+        <input type="text" class="j7-input" id="newSettingValue" placeholder="valeur" style="width:200px;">
+        <button class="btn btn-primary" onclick="addSetting()">Ajouter</button>
+      </div>
+    </div>
+  `);
+}
+
+async function saveSetting(key) {
+  const value = document.getElementById(`setting-${key}`).value;
+  const res = await j7Fetch('/j7/settings', { method: 'POST', body: JSON.stringify({ key, value }) });
+  if (res?.ok) showToast('✅ Paramètre sauvegardé');
+}
+
+async function addSetting() {
+  const key = document.getElementById('newSettingKey').value.trim();
+  const value = document.getElementById('newSettingValue').value.trim();
+  if (!key || !value) { alert('Remplissez les deux champs.'); return; }
+  const res = await j7Fetch('/j7/settings', { method: 'POST', body: JSON.stringify({ key, value }) });
+  if (res?.ok) { showToast('✅ Paramètre ajouté'); loadSettings(); }
+}
+
+// ── MAINTENANCE ──
+async function toggleMaintenance() {
+  maintenanceOn = !maintenanceOn;
+  const toggle = document.getElementById('maintenanceToggle');
+  toggle.classList.toggle('on', maintenanceOn);
+  await j7Fetch('/j7/maintenance', {
+    method: 'POST',
+    body: JSON.stringify({ enabled: maintenanceOn, message: "L'application est en maintenance. Revenez bientôt." })
+  });
+  showToast(maintenanceOn ? '⚠️ Mode maintenance activé' : '✅ Mode maintenance désactivé');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  let toast = document.getElementById('j7Toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'j7Toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--accent);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;transition:opacity 0.3s;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.style.opacity = '0', 3000);
+}
+
+// Enter key on login
+document.getElementById('j7SecretKey')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') j7Login();
+});
+</script>
+</body>
+</html>

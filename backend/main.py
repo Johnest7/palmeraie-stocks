@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from routes import superadmin
 
 from database import init_db
 from routes import auth, products, shopping, exits, losses, reports, analytics, intelligence
@@ -53,6 +54,7 @@ app.include_router(losses.router)
 app.include_router(reports.router)
 app.include_router(analytics.router)
 app.include_router(intelligence.router)
+app.include_router(superadmin.router)
 
 # Serve uploaded receipt photos as static files
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")

@@ -46,7 +46,6 @@ CREATE TABLE IF NOT EXISTS products (
 -- Migration: add selling_price if it doesn't exist yet (for existing databases)
 CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT UNIQUE);
 
-
 -- SHOPPING_SESSIONS: one row per shopping trip
 CREATE TABLE IF NOT EXISTS shopping_sessions (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,6 +84,22 @@ CREATE TABLE IF NOT EXISTS loss_logs (
     reason      TEXT    NOT NULL,
     date        TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ACTIVITY LOGS: tracks all user actions
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER REFERENCES users(id),
+    action     TEXT NOT NULL,
+    details    TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- GLOBAL SETTINGS: app-wide settings (maintenance mode, etc.)
+CREATE TABLE IF NOT EXISTS global_settings (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    key   TEXT NOT NULL UNIQUE,
+    value TEXT NOT NULL
+);
 """
 
 async def get_db():
@@ -113,13 +128,19 @@ async def init_db():
         except Exception:
             pass  # Column already exists
 
+        # Migration: add active column to users
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
+            await db.commit()
+        except Exception:
+            pass  # Column already exists
+
         # Check if any user exists
         async with db.execute("SELECT COUNT(*) FROM users") as cur:
             count = (await cur.fetchone())[0]
 
         if count == 0:
             # Create default admin: username=admin, password=admin123
-            # The password is hashed — we import the hash function here
             from auth import get_password_hash
             hashed = get_password_hash("admin123")
             await db.execute(
@@ -128,3 +149,17 @@ async def init_db():
             )
             await db.commit()
             print("✅ Default admin created: username=admin, password=admin123")
+
+        # Create superadmin (Johnest7) if not exists
+        async with db.execute("SELECT COUNT(*) FROM users WHERE role = 'superadmin'") as cur:
+            sa_count = (await cur.fetchone())[0]
+
+        if sa_count == 0:
+            from auth import get_password_hash
+            sa_hash = get_password_hash("Johnest7@2026!")
+            await db.execute(
+                "INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)",
+                ("Johnest7", "johnest7", sa_hash, "superadmin")
+            )
+            await db.commit()
+            print("✅ Superadmin Johnest7 created")
