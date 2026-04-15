@@ -53,7 +53,7 @@ async function apiFetch(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${window.API_BASE}${path}`, { ...options, headers });
 
   if (res.status === 401) {
     logout();

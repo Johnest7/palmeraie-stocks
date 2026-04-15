@@ -52,6 +52,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // Skip non-HTTP(S) requests (chrome-extension, etc.)
+  if (!url.protocol.startsWith('http')) {
+    return; // Let the browser handle it normally
+  }
+
   // Always go to network for API calls
   if (url.port === '8000' || url.pathname.startsWith('/auth') ||
       url.pathname.startsWith('/products') || url.pathname.startsWith('/shopping') ||
@@ -64,7 +69,7 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cached => {
       return cached || fetch(event.request).then(response => {
-        // Cache new static files we encounter
+        // Cache new static files we encounter (only HTTP(S))
         if (response.ok && event.request.method === 'GET') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
