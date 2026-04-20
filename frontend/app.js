@@ -934,7 +934,7 @@ async function submitNewProduct() {
     category: document.getElementById('newProductCategory').value,
     unit: document.getElementById('newProductUnit').value,
     alert_threshold: parseInt(document.getElementById('newProductThreshold').value),
-    selling_price: parseFloat(document.getElementById('newProductPrice').value) || 0
+    selling_price: parseFloat(document.getElementById('newProductPrice')?.value) || 0
   };
   if (!body.name) { showToast('Le nom est obligatoire.', 'error'); return; }
   try {
