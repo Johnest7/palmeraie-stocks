@@ -225,8 +225,11 @@ async function renderShopping() {
     const products = await api.get('/products');
 
     const productOptions = products.map(p =>
-      `<option value="${p.id}" data-unit="${p.unit}">${p.name} (${p.unit})</option>`
+      `<option value="${p.id}" data-unit="${p.unit}" data-price="${p.selling_price}">${p.name} (${p.unit})</option>`
     ).join('');
+
+    // Store product options globally for use in addShoppingItem
+    window._shoppingProductOptions = productOptions;
 
     setContent(`
       <div class="card">
@@ -237,26 +240,22 @@ async function renderShopping() {
       <div class="card">
         <div class="form-row">
           <div class="form-group">
-            <label>Coût total (FCFA)</label>
-            <input type="number" class="form-control" id="shoppingCost" placeholder="ex: 45000" min="0">
-          </div>
-          <div class="form-group">
             <label>Notes (optionnel)</label>
             <input type="text" class="form-control" id="shoppingNotes" placeholder="ex: Marché Tilène">
           </div>
-        </div>
-
-        <div class="form-group">
-          <label>Photo du reçu (optionnel)</label>
-          <input type="file" class="form-control" id="receiptPhoto" accept="image/*" capture="environment" onchange="previewPhoto(this)">
-          <div class="photo-preview" id="photoPreview"></div>
+          <div class="form-group">
+            <label>Photo du reçu (optionnel)</label>
+            <input type="file" class="form-control" id="receiptPhoto" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+            <div class="photo-preview" id="photoPreview"></div>
+          </div>
         </div>
 
         <hr style="border:none;border-top:1px solid var(--color-border);margin:16px 0;">
 
+        <!-- ARTICLES ACHETÉS -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <h3 style="font-size:14px;font-weight:700;">Articles achetés</h3>
-          <button class="btn btn-outline btn-sm" onclick="addShoppingItem('${productOptions.replace(/'/g, "\\'")}')">
+          <button class="btn btn-outline btn-sm" onclick="addShoppingItem()">
             <i class="fa-solid fa-plus"></i> Ajouter un article
           </button>
         </div>
@@ -265,15 +264,16 @@ async function renderShopping() {
           <table class="items-table" id="shoppingItemsTable">
             <thead>
               <tr>
-                <th style="width:40%">Produit</th>
-                <th style="width:20%">Quantité</th>
-                <th style="width:25%">Prix unitaire (FCFA)</th>
-                <th style="width:15%"></th>
+                <th style="width:38%">Produit</th>
+                <th style="width:18%">Quantité</th>
+                <th style="width:22%">Prix unitaire (FCFA)</th>
+                <th style="width:14%">Sous-total</th>
+                <th style="width:8%"></th>
               </tr>
             </thead>
             <tbody id="shoppingItemsBody">
               <tr id="emptyShoppingRow">
-                <td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:20px;">
+                <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:20px;">
                   Cliquez sur "Ajouter un article" pour commencer
                 </td>
               </tr>
@@ -281,7 +281,47 @@ async function renderShopping() {
           </table>
         </div>
 
-        <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+        <hr style="border:none;border-top:1px solid var(--color-border);margin:16px 0;">
+
+        <!-- DÉPENSES AUTRES -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="font-size:14px;font-weight:700;">Autres dépenses <span style="font-size:12px;font-weight:400;color:var(--color-text-muted);">(optionnel)</span></h3>
+          <button class="btn btn-outline btn-sm" onclick="addOtherExpense()">
+            <i class="fa-solid fa-plus"></i> Ajouter une dépense
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width:55%">Justification / Description</th>
+                <th style="width:33%">Montant (FCFA)</th>
+                <th style="width:12%"></th>
+              </tr>
+            </thead>
+            <tbody id="otherExpensesBody">
+              <tr id="emptyExpenseRow">
+                <td colspan="3" style="text-align:center;color:var(--color-text-muted);padding:12px;">
+                  Aucune autre dépense
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--color-border);margin:16px 0;">
+
+        <!-- TOTAL AUTOMATIQUE -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+          <div style="background:var(--color-accent-light);border-radius:10px;padding:14px 24px;text-align:right;min-width:240px;">
+            <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:4px;">TOTAL AUTOMATIQUE</div>
+            <div id="shoppingTotalDisplay" style="font-size:24px;font-weight:700;color:var(--color-accent);">0 FCFA</div>
+            <div style="font-size:11px;color:var(--color-text-muted);margin-top:2px;" id="totalBreakdown"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
           <button class="btn btn-outline" onclick="navigateTo('dashboard')">Annuler</button>
           <button class="btn btn-primary" onclick="submitShopping()">
             <i class="fa-solid fa-floppy-disk"></i> Enregistrer la session
@@ -291,43 +331,108 @@ async function renderShopping() {
     `);
 
     // Auto-add first empty row
-    addShoppingItem(productOptions);
+    addShoppingItem();
 
   } catch (e) {
     setContent(`<div class="card"><p style="color:var(--color-danger);">Erreur: ${e.message}</p></div>`);
   }
 }
 
-// Add a row to the shopping items table
-function addShoppingItem(productOptions) {
+// Add a product row to the shopping items table
+function addShoppingItem() {
   const body = document.getElementById('shoppingItemsBody');
   const empty = document.getElementById('emptyShoppingRow');
   if (empty) empty.remove();
 
+  const productOptions = window._shoppingProductOptions || '';
   const row = document.createElement('tr');
+  row.className = 'shopping-item-row';
   row.innerHTML = `
     <td>
-      <select class="form-control item-product" onchange="updateUnit(this)">
+      <select class="form-control item-product" onchange="updateUnit(this); updateShoppingTotal();">
         <option value="">-- Sélectionner --</option>
         ${productOptions}
       </select>
     </td>
     <td>
       <div style="display:flex;align-items:center;gap:6px;">
-        <input type="number" class="form-control item-qty" placeholder="0" min="0" step="0.1" style="width:80px;">
+        <input type="number" class="form-control item-qty" placeholder="0" min="0" step="0.1"
+          style="width:80px;" oninput="updateShoppingTotal()">
         <span class="item-unit-label" style="font-size:12px;color:var(--color-text-muted);white-space:nowrap;"></span>
       </div>
     </td>
     <td>
-      <input type="number" class="form-control item-price" placeholder="0" min="0">
+      <input type="number" class="form-control item-price" placeholder="0" min="0"
+        oninput="updateShoppingTotal()">
     </td>
+    <td style="font-weight:600;color:var(--color-accent);" class="item-subtotal">0</td>
     <td>
-      <button class="btn-remove-item" onclick="this.closest('tr').remove()">
+      <button class="btn-remove-item" onclick="this.closest('tr').remove(); updateShoppingTotal();">
         <i class="fa-solid fa-trash"></i>
       </button>
     </td>
   `;
   body.appendChild(row);
+  updateShoppingTotal();
+}
+
+// Add an "other expense" row
+function addOtherExpense() {
+  const body = document.getElementById('otherExpensesBody');
+  const empty = document.getElementById('emptyExpenseRow');
+  if (empty) empty.remove();
+
+  const row = document.createElement('tr');
+  row.className = 'expense-row';
+  row.innerHTML = `
+    <td>
+      <input type="text" class="form-control expense-name" placeholder="ex: Transport, Carton, Main d'oeuvre..." required>
+    </td>
+    <td>
+      <input type="number" class="form-control expense-amount" placeholder="0" min="0"
+        oninput="updateShoppingTotal()">
+    </td>
+    <td>
+      <button class="btn-remove-item" onclick="this.closest('tr').remove(); updateShoppingTotal();">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </td>
+  `;
+  body.appendChild(row);
+  updateShoppingTotal();
+}
+
+// Update the automatic total
+function updateShoppingTotal() {
+  let itemsTotal = 0;
+  let expensesTotal = 0;
+
+  // Sum products
+  document.querySelectorAll('.shopping-item-row').forEach(row => {
+    const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+    const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+    const subtotal = qty * price;
+    const subtotalEl = row.querySelector('.item-subtotal');
+    if (subtotalEl) subtotalEl.textContent = new Intl.NumberFormat('fr-FR').format(subtotal);
+    itemsTotal += subtotal;
+  });
+
+  // Sum other expenses
+  document.querySelectorAll('.expense-row').forEach(row => {
+    const amount = parseFloat(row.querySelector('.expense-amount')?.value) || 0;
+    expensesTotal += amount;
+  });
+
+  const total = itemsTotal + expensesTotal;
+  const display = document.getElementById('shoppingTotalDisplay');
+  const breakdown = document.getElementById('totalBreakdown');
+
+  if (display) display.textContent = new Intl.NumberFormat('fr-FR').format(total) + ' FCFA';
+  if (breakdown && expensesTotal > 0) {
+    breakdown.textContent = `Articles: ${new Intl.NumberFormat('fr-FR').format(itemsTotal)} + Autres: ${new Intl.NumberFormat('fr-FR').format(expensesTotal)}`;
+  } else if (breakdown) {
+    breakdown.textContent = '';
+  }
 }
 
 function updateUnit(select) {
@@ -344,6 +449,72 @@ function previewPhoto(input) {
       preview.innerHTML = `<img src="${e.target.result}" alt="Aperçu reçu">`;
     };
     reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function submitShopping() {
+  const notes = document.getElementById('shoppingNotes').value.trim();
+  const photoInput = document.getElementById('receiptPhoto');
+
+  // Collect product items
+  const rows = document.querySelectorAll('.shopping-item-row');
+  const items = [];
+  let valid = true;
+
+  rows.forEach(row => {
+    const productId = parseInt(row.querySelector('.item-product').value);
+    const qty = parseFloat(row.querySelector('.item-qty').value);
+    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+    if (!productId || isNaN(qty) || qty <= 0) { valid = false; return; }
+    items.push({ product_id: productId, quantity: qty, unit_price: price });
+  });
+
+  if (items.length === 0) {
+    showToast('Ajoutez au moins un article.', 'error');
+    return;
+  }
+  if (!valid) {
+    showToast('Vérifiez que tous les articles ont un produit et une quantité.', 'error');
+    return;
+  }
+
+  // Collect other expenses and add to notes
+  const expenseRows = document.querySelectorAll('.expense-row');
+  let expensesTotal = 0;
+  const expenseDetails = [];
+  expenseRows.forEach(row => {
+    const name = row.querySelector('.expense-name').value.trim();
+    const amount = parseFloat(row.querySelector('.expense-amount').value) || 0;
+    if (name && amount > 0) {
+      expensesTotal += amount;
+      expenseDetails.push(`${name}: ${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`);
+    }
+  });
+
+  // Calculate total automatically
+  let itemsTotal = 0;
+  items.forEach(i => { itemsTotal += i.quantity * i.unit_price; });
+  const totalCost = itemsTotal + expensesTotal;
+
+  // Build notes with expense details
+  const fullNotes = [
+    notes,
+    expenseDetails.length > 0 ? `Autres dépenses: ${expenseDetails.join(', ')}` : ''
+  ].filter(Boolean).join(' | ');
+
+  // Build FormData
+  const formData = new FormData();
+  formData.append('total_cost', totalCost);
+  formData.append('items', JSON.stringify(items));
+  if (fullNotes) formData.append('notes', fullNotes);
+  if (photoInput.files[0]) formData.append('receipt_photo', photoInput.files[0]);
+
+  try {
+    await api.postForm('/shopping', formData);
+    showToast('Session d\'achat enregistrée avec succès !');
+    navigateTo('dashboard');
+  } catch (e) {
+    showToast(`Erreur: ${e.message}`, 'error');
   }
 }
 
