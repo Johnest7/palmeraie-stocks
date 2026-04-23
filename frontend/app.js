@@ -696,12 +696,21 @@ async function renderEndOfDay() {
 
 function eodAdjust(productId, delta) {
   const input = document.getElementById(`eod-qty-${productId}`);
+  const maxStock = parseFloat(input.dataset.stock || 0);
   const current = parseFloat(input.value) || 0;
-  input.value = Math.max(0, current + delta);
+  const newVal = Math.max(0, Math.min(current + delta, maxStock));
+  input.value = newVal;
   eodOnChange(productId);
 }
 
 function eodOnChange(productId) {
+  const input = document.getElementById(`eod-qty-${productId}`);
+  const maxStock = parseFloat(input.dataset.stock || 0);
+  if (parseFloat(input.value) > maxStock) {
+    input.value = maxStock;
+    showToast(`Maximum: ${maxStock} ${input.dataset.unit}`, 'error');
+  }
+
   const input = document.getElementById(`eod-qty-${productId}`);
   const qty = parseFloat(input.value) || 0;
   const card = document.getElementById(`eod-card-${productId}`);
