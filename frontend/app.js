@@ -1100,15 +1100,12 @@ async function renderProducts() {
               <option>unité</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Seuil d'alerte</label>
-            <div class="form-group"><label>Seuil d'alerte</label><input type="number" class="form-control" id="newProductThreshold" value="5" min="1"></div>
+          <div class="form-group"><label>Seuil d'alerte</label><input type="number" class="form-control" id="newProductThreshold" value="5" min="1"></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label>Prix de vente (FCFA)</label><input type="number" class="form-control" id="newProductPrice" placeholder="ex: 500" min="0"></div>
           <div></div>
         </div>
-          </div>
         </div>
         <div style="display:flex;justify-content:flex-end;">
           <button class="btn btn-primary" onclick="submitNewProduct()">
