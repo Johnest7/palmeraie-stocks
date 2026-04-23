@@ -704,12 +704,6 @@ function eodAdjust(productId, delta) {
 }
 
 function eodOnChange(productId) {
-  const input = document.getElementById(`eod-qty-${productId}`);
-  const maxStock = parseFloat(input.dataset.stock || 0);
-  if (parseFloat(input.value) > maxStock) {
-    input.value = maxStock;
-    showToast(`Maximum: ${maxStock} ${input.dataset.unit}`, 'error');
-  }
 
   const input = document.getElementById(`eod-qty-${productId}`);
   const qty = parseFloat(input.value) || 0;
