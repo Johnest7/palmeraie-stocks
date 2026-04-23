@@ -911,18 +911,54 @@ async function renderHistory() {
   }
 
   try {
-    const history = await api.get('/reports/history');
+    const [history, sessions] = await Promise.all([
+      api.get('/reports/history'),
+      api.get('/shopping')
+    ]);
 
-    const rows = history.length === 0
-      ? `<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:24px;">Aucun mouvement enregistré.</td></tr>`
-      : history.map(m => `
+    const fmt = n => new Intl.NumberFormat('fr-FR').format(n);
+
+    // ── SHOPPING SESSIONS (groupées) ──
+    const sessionsHtml = sessions.length === 0
+      ? '<p style="color:var(--color-text-muted);font-size:13px;">Aucune session d\'achat.</p>'
+      : sessions.map(s => `
+          <div style="border:1px solid var(--color-border);border-radius:10px;margin-bottom:12px;overflow:hidden;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f8faf8;cursor:pointer;"
+              onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+              <div>
+                <strong style="font-size:14px;">Session du ${formatDate(s.date)}</strong>
+                <span style="margin-left:12px;font-size:12px;color:var(--color-text-muted);">par ${s.manager_name}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;">
+                <span style="font-weight:700;color:var(--color-accent);">${fmt(s.total_cost)} FCFA</span>
+                <span style="font-size:12px;color:var(--color-text-muted);">${s.items.length} article${s.items.length>1?'s':''} ▾</span>
+              </div>
+            </div>
+            <div style="display:none;padding:12px 16px;">
+              ${s.notes ? `<p style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">📝 ${s.notes}</p>` : ''}
+              <table class="data-table" style="font-size:13px;">
+                <thead><tr><th>Produit</th><th>Quantité</th><th>Prix unitaire</th><th>Sous-total</th></tr></thead>
+                <tbody>
+                  ${s.items.map(i => `
+                    <tr>
+                      <td>${i.product_name}</td>
+                      <td>${i.quantity} ${i.unit}</td>
+                      <td>${fmt(i.unit_price)} FCFA</td>
+                      <td>${fmt(i.quantity * i.unit_price)} FCFA</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>`).join('');
+
+    // ── EXITS & LOSSES ──
+    const movements = history.filter(m => m.type !== 'entry');
+    const movementsHtml = movements.length === 0
+      ? `<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:24px;">Aucun mouvement.</td></tr>`
+      : movements.map(m => `
           <tr>
             <td>${formatDate(m.date)}</td>
-            <td>
-              <span class="badge badge-${m.type === 'entry' ? 'entry' : m.type === 'exit' ? 'exit' : 'loss'}">
-                ${m.type === 'entry' ? 'Entrée' : m.type === 'exit' ? 'Sortie' : 'Perte'}
-              </span>
-            </td>
+            <td><span class="badge badge-${m.type === 'exit' ? 'exit' : 'loss'}">${m.type === 'exit' ? 'Sortie' : 'Perte'}</span></td>
             <td><strong>${m.product}</strong></td>
             <td>${m.quantity} ${m.unit}</td>
             <td>${m.manager}</td>
@@ -931,16 +967,16 @@ async function renderHistory() {
 
     setContent(`
       <div class="card">
-        <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--color-info);margin-right:8px;"></i>Historique complet des mouvements</h2>
-        <p style="margin-top:4px;">Tous les mouvements de stock : entrées, sorties et pertes.</p>
+        <h2><i class="fa-solid fa-cart-shopping" style="color:var(--color-accent);margin-right:8px;"></i>Sessions d'achat</h2>
+        <p style="font-size:13px;color:var(--color-text-muted);margin:6px 0 16px;">Cliquez sur une session pour voir le détail.</p>
+        ${sessionsHtml}
       </div>
       <div class="card">
-        <div class="table-wrap">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--color-info);margin-right:8px;"></i>Sorties & Pertes</h2>
+        <div class="table-wrap" style="margin-top:16px;">
           <table class="data-table">
-            <thead>
-              <tr><th>Date</th><th>Type</th><th>Produit</th><th>Quantité</th><th>Par</th><th>Notes</th></tr>
-            </thead>
-            <tbody>${rows}</tbody>
+            <thead><tr><th>Date</th><th>Type</th><th>Produit</th><th>Quantité</th><th>Par</th><th>Notes</th></tr></thead>
+            <tbody>${movementsHtml}</tbody>
           </table>
         </div>
       </div>
@@ -949,7 +985,6 @@ async function renderHistory() {
     setContent(`<div class="card"><p style="color:var(--color-danger);">Erreur: ${e.message}</p></div>`);
   }
 }
-
 
 // ============================================================
 //  PAGE: PRODUITS
