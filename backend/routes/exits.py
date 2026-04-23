@@ -2,8 +2,7 @@
 routes/exits.py
 ---------------
 End-of-day stock exit recording.
-The manager logs what was consumed during the day — per item.
-Each exit decreases the product's current_stock.
+Each submission creates an exit_session grouping all products together.
 """
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -22,15 +21,19 @@ async def record_end_of_day(
     db: aiosqlite.Connection = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """
-    Record end-of-day consumption for multiple products at once.
-    Decreases each product's stock and returns all created exit records.
-    """
     manager_id = int(current_user["sub"])
+
+    # Create an exit session to group all exits together
+    async with db.execute(
+        "INSERT INTO exit_sessions (manager_id) VALUES (?) RETURNING id",
+        (manager_id,)
+    ) as cur:
+        exit_session_id = (await cur.fetchone())["id"]
+
     created_ids = []
 
     for item in body.items:
-        # Check product exists and has enough stock
+        # Check product exists
         async with db.execute(
             "SELECT current_stock FROM products WHERE id = ?", (item.product_id,)
         ) as cur:
@@ -39,17 +42,14 @@ async def record_end_of_day(
         if not product:
             raise HTTPException(status_code=404, detail=f"Produit {item.product_id} introuvable")
 
-        # We allow going below 0 (manager logs what was used even if stock
-        # wasn't updated correctly) — it will show as a discrepancy
         async with db.execute(
-            """INSERT INTO stock_exits (manager_id, product_id, quantity, notes)
-               VALUES (?, ?, ?, ?) RETURNING id""",
-            (manager_id, item.product_id, item.quantity, item.notes)
+            """INSERT INTO stock_exits (manager_id, product_id, quantity, notes, exit_session_id)
+               VALUES (?, ?, ?, ?, ?) RETURNING id""",
+            (manager_id, item.product_id, item.quantity, item.notes, exit_session_id)
         ) as cur:
             row = await cur.fetchone()
             created_ids.append(row["id"])
 
-        # Decrease stock
         await db.execute(
             "UPDATE products SET current_stock = current_stock - ? WHERE id = ?",
             (item.quantity, item.product_id)
@@ -57,11 +57,47 @@ async def record_end_of_day(
 
     await db.commit()
 
-    # Return all created exit records
     results = []
     for exit_id in created_ids:
         results.append(await _get_exit(db, exit_id))
     return results
+
+
+@router.get("/sessions")
+async def list_exit_sessions(
+    db: aiosqlite.Connection = Depends(get_db),
+    _=Depends(get_current_user)
+):
+    """List all exit sessions with their items grouped."""
+    async with db.execute(
+        """SELECT es.id, es.date, u.name as manager_name
+           FROM exit_sessions es
+           JOIN users u ON u.id = es.manager_id
+           ORDER BY es.date DESC"""
+    ) as cur:
+        sessions = [dict(r) for r in await cur.fetchall()]
+
+    result = []
+    for session in sessions:
+        async with db.execute(
+            """SELECT e.quantity, e.notes, p.name as product_name, p.unit, p.selling_price,
+                      (e.quantity * p.selling_price) as subtotal
+               FROM stock_exits e
+               JOIN products p ON p.id = e.product_id
+               WHERE e.exit_session_id = ?""",
+            (session["id"],)
+        ) as cur:
+            items = [dict(r) for r in await cur.fetchall()]
+
+        total_value = sum(i["subtotal"] for i in items)
+        result.append({
+            **session,
+            "items": items,
+            "total_value": round(total_value),
+            "item_count": len(items)
+        })
+
+    return result
 
 
 @router.get("", response_model=List[ExitOut])
@@ -69,7 +105,6 @@ async def list_exits(
     db: aiosqlite.Connection = Depends(get_db),
     _=Depends(get_current_user)
 ):
-    """List all exit records, most recent first."""
     async with db.execute(
         "SELECT id FROM stock_exits ORDER BY date DESC LIMIT 100"
     ) as cur:
