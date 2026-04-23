@@ -453,7 +453,7 @@ function previewPhoto(input) {
 }
 
 async function submitShopping() {
-  const notes = document.getElementById('shoppingNotes').value.trim();
+  const notes = document.getElementById('shoppingNotes')?.value.trim() || '';
   const photoInput = document.getElementById('receiptPhoto');
 
   // Collect product items
@@ -520,7 +520,7 @@ async function submitShopping() {
 
 async function submitShopping() {
   const cost = parseFloat(document.getElementById('shoppingCost').value);
-  const notes = document.getElementById('shoppingNotes').value.trim();
+  const notes = document.getElementById('shoppingNotes')?.value.trim() || '';
   const photoInput = document.getElementById('receiptPhoto');
 
   if (isNaN(cost) || cost < 0) {
