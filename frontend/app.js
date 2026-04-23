@@ -547,7 +547,7 @@ async function submitShopping() {
 
   // Build FormData (needed for file upload)
   const formData = new FormData();
-  formData.append('total_cost', cost);
+  formData.append('total_cost', totalCost);
   formData.append('items', JSON.stringify(items));
   if (notes) formData.append('notes', notes);
   if (photoInput.files[0]) formData.append('receipt_photo', photoInput.files[0]);
