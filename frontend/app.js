@@ -1062,8 +1062,11 @@ async function renderProducts() {
               <td>
                 ${user.role === 'admin' ? `
                   <button class="btn btn-outline btn-sm" onclick="openEditProduct(${p.id}, '${p.name}', '${p.category}', '${p.unit}', ${p.alert_threshold}, ${p.selling_price})">
-                    <i class="fa-solid fa-pen"></i>
-                  </button>` : ''}
+  <i class="fa-solid fa-pen"></i>
+</button>
+<button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id}, '${p.name}')">
+  <i class="fa-solid fa-trash"></i>
+</button>` : ''}
               </td>
             </tr>`;
         }).join('');
@@ -1209,6 +1212,16 @@ async function submitNewProduct() {
   }
 }
 
+async function deleteProduct(productId, productName) {
+  if (!confirm(`Supprimer "${productName}" ? Cette action est irréversible.`)) return;
+  try {
+    await api.delete(`/products/${productId}`);
+    showToast('Produit supprimé !');
+    renderProducts();
+  } catch (e) {
+    showToast(`Erreur: ${e.message}`, 'error');
+  }
+}
 
 // ============================================================
 //  PAGE: RAPPORTS (admin only)
