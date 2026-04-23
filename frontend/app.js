@@ -782,6 +782,18 @@ function submitEndOfDay() {
 async function confirmEndOfDay() {
   const items = window._eodItems;
   if (!items) return;
+
+  // Vérifier que les quantités ne dépassent pas le stock disponible
+  for (const item of items) {
+    const input = document.querySelector(`.eod-qty-input[data-product-id="${item.product_id}"]`);
+    const maxStock = parseFloat(input?.dataset.stock || 0);
+    if (item.quantity > maxStock) {
+      showToast(`❌ ${item.name}: vous ne pouvez pas sortir ${item.quantity} ${item.unit} — stock disponible: ${maxStock} ${item.unit}`, 'error');
+      document.getElementById('eodSummaryModal').style.display = 'none';
+      return;
+    }
+  }
+
   document.getElementById('eodSummaryModal').style.display = 'none';
   try {
     await api.post('/exits', { items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, notes: i.notes })) });
