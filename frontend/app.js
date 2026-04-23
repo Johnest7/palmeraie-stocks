@@ -545,6 +545,15 @@ async function submitShopping() {
     return;
   }
 
+  // Calculate total automatically
+  let itemsTotal = 0;
+  items.forEach(i => { itemsTotal += i.quantity * i.unit_price; });
+  let expensesTotal = 0;
+  document.querySelectorAll('.expense-row').forEach(row => {
+    expensesTotal += parseFloat(row.querySelector('.expense-amount')?.value) || 0;
+  });
+  const totalCost = itemsTotal + expensesTotal;
+
   // Build FormData (needed for file upload)
   const formData = new FormData();
   formData.append('total_cost', totalCost);
