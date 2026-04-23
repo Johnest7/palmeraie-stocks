@@ -91,6 +91,7 @@ const pages = {
   analytics:     { title: 'Analytics',          render: renderAnalytics    },
   intelligence:  { title: 'Intelligence IA',    render: renderIntelligence },
   monthly:       { title: 'Comparaison mensuelle', render: renderMonthlyComparison },
+  dishes: { title: 'Plats & Recettes', render: renderDishes },
 };
 
 async function navigateTo(pageKey) {

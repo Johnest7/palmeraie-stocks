@@ -56,14 +56,14 @@ CREATE TABLE IF NOT EXISTS exit_sessions (
 );
 
 CREATE TABLE IF NOT EXISTS stock_exits (
-    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-    manager_id           INTEGER NOT NULL REFERENCES users(id),
-    product_id           INTEGER NOT NULL REFERENCES products(id),
-    exit_session_id      INTEGER REFERENCES exit_sessions(id),
-    quantity             REAL    NOT NULL,
-    notes                TEXT,
-    selling_price_at_exit REAL   NOT NULL DEFAULT 0,
-    date                 TEXT    NOT NULL DEFAULT (datetime('now'))
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    manager_id            INTEGER NOT NULL REFERENCES users(id),
+    product_id            INTEGER NOT NULL REFERENCES products(id),
+    exit_session_id       INTEGER REFERENCES exit_sessions(id),
+    quantity              REAL    NOT NULL,
+    notes                 TEXT,
+    selling_price_at_exit REAL    NOT NULL DEFAULT 0,
+    date                  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS loss_logs (
@@ -87,6 +87,36 @@ CREATE TABLE IF NOT EXISTS global_settings (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     key   TEXT NOT NULL UNIQUE,
     value TEXT NOT NULL
+);
+
+-- DISHES: plats vendus avec prix de vente
+CREATE TABLE IF NOT EXISTS dishes (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT    NOT NULL,
+    selling_price REAL    NOT NULL DEFAULT 0,
+    description   TEXT,
+    active        INTEGER NOT NULL DEFAULT 1,
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- DISH_INGREDIENTS: recette de chaque plat
+CREATE TABLE IF NOT EXISTS dish_ingredients (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    dish_id    INTEGER NOT NULL REFERENCES dishes(id),
+    product_id INTEGER NOT NULL REFERENCES products(id),
+    quantity   REAL    NOT NULL,
+    unit       TEXT    NOT NULL
+);
+
+-- DISH_SALES: ventes de plats en fin de journée
+CREATE TABLE IF NOT EXISTS dish_sales (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    manager_id       INTEGER NOT NULL REFERENCES users(id),
+    dish_id          INTEGER NOT NULL REFERENCES dishes(id),
+    quantity_sold    INTEGER NOT NULL,
+    selling_price_at_sale REAL NOT NULL DEFAULT 0,
+    exit_session_id  INTEGER REFERENCES exit_sessions(id),
+    date             TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 """
 
