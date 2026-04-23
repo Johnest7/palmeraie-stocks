@@ -1,6 +1,4 @@
 // Service worker — réseau en priorité, pas de cache
-const CACHE_NAME = 'palmeraie-v2';
-
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', event => {
@@ -11,6 +9,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Laisser passer toutes les requêtes sans cache
   if (!event.request.url.startsWith('http')) return;
   event.respondWith(fetch(event.request));
 });
