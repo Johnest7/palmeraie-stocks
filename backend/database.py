@@ -56,13 +56,14 @@ CREATE TABLE IF NOT EXISTS exit_sessions (
 );
 
 CREATE TABLE IF NOT EXISTS stock_exits (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    manager_id       INTEGER NOT NULL REFERENCES users(id),
-    product_id       INTEGER NOT NULL REFERENCES products(id),
-    exit_session_id  INTEGER REFERENCES exit_sessions(id),
-    quantity         REAL    NOT NULL,
-    notes            TEXT,
-    date             TEXT    NOT NULL DEFAULT (datetime('now'))
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    manager_id           INTEGER NOT NULL REFERENCES users(id),
+    product_id           INTEGER NOT NULL REFERENCES products(id),
+    exit_session_id      INTEGER REFERENCES exit_sessions(id),
+    quantity             REAL    NOT NULL,
+    notes                TEXT,
+    selling_price_at_exit REAL   NOT NULL DEFAULT 0,
+    date                 TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS loss_logs (
@@ -103,6 +104,7 @@ async def init_db():
             "ALTER TABLE products ADD COLUMN selling_price REAL NOT NULL DEFAULT 0",
             "ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE stock_exits ADD COLUMN exit_session_id INTEGER REFERENCES exit_sessions(id)",
+            "ALTER TABLE stock_exits ADD COLUMN selling_price_at_exit REAL NOT NULL DEFAULT 0",
         ]:
             try:
                 await db.execute(migration)

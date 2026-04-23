@@ -1,10 +1,6 @@
 """
-routes/exits.py
----------------
-End-of-day stock exit recording.
-Each submission creates an exit_session grouping all products together.
+routes/exits.py — with selling_price_at_exit
 """
-
 from fastapi import APIRouter, HTTPException, Depends
 from database import get_db
 from auth import get_current_user
@@ -14,7 +10,6 @@ import aiosqlite
 
 router = APIRouter(prefix="/exits", tags=["exits"])
 
-
 @router.post("", response_model=List[ExitOut])
 async def record_end_of_day(
     body: EndOfDayCreate,
@@ -23,7 +18,6 @@ async def record_end_of_day(
 ):
     manager_id = int(current_user["sub"])
 
-    # Create an exit session to group all exits together
     async with db.execute(
         "INSERT INTO exit_sessions (manager_id) VALUES (?) RETURNING id",
         (manager_id,)
@@ -33,19 +27,24 @@ async def record_end_of_day(
     created_ids = []
 
     for item in body.items:
-        # Check product exists
         async with db.execute(
-            "SELECT current_stock FROM products WHERE id = ?", (item.product_id,)
+            "SELECT current_stock, selling_price FROM products WHERE id = ?",
+            (item.product_id,)
         ) as cur:
             product = await cur.fetchone()
 
         if not product:
             raise HTTPException(status_code=404, detail=f"Produit {item.product_id} introuvable")
 
+        # Save selling price AT THIS MOMENT
+        selling_price_at_exit = product["selling_price"]
+
         async with db.execute(
-            """INSERT INTO stock_exits (manager_id, product_id, quantity, notes, exit_session_id)
-               VALUES (?, ?, ?, ?, ?) RETURNING id""",
-            (manager_id, item.product_id, item.quantity, item.notes, exit_session_id)
+            """INSERT INTO stock_exits
+               (manager_id, product_id, quantity, notes, exit_session_id, selling_price_at_exit)
+               VALUES (?, ?, ?, ?, ?, ?) RETURNING id""",
+            (manager_id, item.product_id, item.quantity, item.notes,
+             exit_session_id, selling_price_at_exit)
         ) as cur:
             row = await cur.fetchone()
             created_ids.append(row["id"])
@@ -68,7 +67,6 @@ async def list_exit_sessions(
     db: aiosqlite.Connection = Depends(get_db),
     _=Depends(get_current_user)
 ):
-    """List all exit sessions with their items grouped."""
     async with db.execute(
         """SELECT es.id, es.date, u.name as manager_name
            FROM exit_sessions es
@@ -80,8 +78,9 @@ async def list_exit_sessions(
     result = []
     for session in sessions:
         async with db.execute(
-            """SELECT e.quantity, e.notes, p.name as product_name, p.unit, p.selling_price,
-                      (e.quantity * p.selling_price) as subtotal
+            """SELECT e.quantity, e.notes, p.name as product_name, p.unit,
+                      e.selling_price_at_exit as selling_price,
+                      (e.quantity * e.selling_price_at_exit) as subtotal
                FROM stock_exits e
                JOIN products p ON p.id = e.product_id
                WHERE e.exit_session_id = ?""",
